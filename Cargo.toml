@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "base-learning",
+    "lib-learning",
+    "middleware-learning"
+]

@@ -1,0 +1,156 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'base-learning'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=base-learning",
+                    "--package=base-learning"
+                ],
+                "filter": {
+                    "name": "base-learning",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'base-learning'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=base-learning",
+                    "--package=base-learning"
+                ],
+                "filter": {
+                    "name": "base-learning",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'async-learnning'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=async-learnning",
+                    "--package=base-learning"
+                ],
+                "filter": {
+                    "name": "async-learnning",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'async-learnning'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=async-learnning",
+                    "--package=base-learning"
+                ],
+                "filter": {
+                    "name": "async-learnning",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'lib-learning'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=lib-learning",
+                    "--package=lib-learning"
+                ],
+                "filter": {
+                    "name": "lib-learning",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'lib-learning'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=lib-learning",
+                    "--package=lib-learning"
+                ],
+                "filter": {
+                    "name": "lib-learning",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'clap'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=clap",
+                    "--package=lib-learning"
+                ],
+                "filter": {
+                    "name": "clap",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'clap'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=clap",
+                    "--package=lib-learning"
+                ],
+                "filter": {
+                    "name": "clap",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

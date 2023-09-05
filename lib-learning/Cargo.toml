@@ -3,6 +3,14 @@ name = "lib-learning"
 version = "0.1.0"
 edition = "2021"
 
+# [[bin]]
+# name = "helloworld-server"
+# path = "src/grpc-tonic/server.rs"
+
+# [[bin]]
+# name = "helloworld-client"
+# path = "src/grpc-tonic/client.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,3 +22,30 @@ tokio-util = "0.7.7"
 arrow = "37.0.0"
 opcua = { version = "0.11", features = ["client"] }
 dashmap = "5.4.0"
+csv-async = "1.2.6"
+futures = "0.3.28"
+async-std = "1.12.0"
+
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+tokio-cron-scheduler = "*"
+cron = "0.12.0"
+
+## duration 解析，可以解析相当复杂的表达式，例如：1 day -1 hour 等
+parse_duration = "2.1.1"
+
+## 随机数
+rand = "0.8.5"
+## grpc tonic
+tonic = "0.9"
+prost = "0.11"
+
+## 一个异步的并发集合库 提供了 HashMap，HashSet 等
+scc = "2.0.0"
+
+## JSON （反）序列化库。A JSON serialization file format
+serde_json = "1.0.104"
+
+## rsa 算法库
+rsa = "0.9.2"

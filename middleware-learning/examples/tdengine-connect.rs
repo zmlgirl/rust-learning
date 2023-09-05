@@ -1,46 +1,179 @@
+
+use chrono::{DateTime, Local};
 use taos::*;
 
-fn main() {
-    // let builder = TaosBuilder::from_dsn("taos+ws://192.168.1.92:56041/").unwrap();
-    // let taos = builder.build().unwrap();
-    // futures::executor::block_on(taos.exec("drop database if exists stt1")).unwrap();
-    // println!("create database");
-    // futures::executor::block_on(taos.query("create database if not exists stt1 keep 36500"))
-    //     .unwrap();
-    // futures::executor::block_on(taos.exec("use stt1")).unwrap();
-    // futures::executor::block_on(taos.exec(
-    //     // "create stable if not exists st1(ts timestamp, v int) tags(jt json)"
-    //     "create stable if not exists st1(ts timestamp, v int) tags(jt int, t1 varchar(32))",
-    // ))
-    // .unwrap();
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let dsn = "taos+ws://192.168.0.201:36041";
+    let builder = TaosBuilder::from_dsn(dsn)?;
 
-    // let mut stmt = Stmt::init(&taos).unwrap();
-    // let sql = "insert into ? using st1 tags(?, ?) values(?, ?)";
-    // stmt.prepare(sql).unwrap();
+    let taos = builder.build().await?;
 
-    // // let tags = vec![TaosBind::from_json(r#"{"name":"value"}"#)];
-    // let tbname = "tb1";
-    // let tags = vec![Value::Int(0), Value::VarChar(String::from("123"))];
-    // stmt.set_tbname_tags(tbname, &tags).unwrap();
-    // drop(tags);
-    // let params = vec![
-    //     ColumnView::from_millis_timestamp(vec![0]),
-    //     ColumnView::from_ints(vec![0]),
-    // ];
-    // stmt.bind(&params).unwrap();
-    // println!("bind");
+    let db = "query";
 
-    // let params = vec![
-    //     ColumnView::from_millis_timestamp(vec![1]),
-    //     ColumnView::from_ints(vec![0]),
-    // ];
-    // stmt.bind(&params);
-    // println!("add batch");
+    // prepare database
+    taos.exec_many([
+        format!("DROP DATABASE IF EXISTS `{db}`"),
+        format!("CREATE DATABASE `{db}`"),
+        format!("USE `{db}`"),
+    ])
+    .await?;
 
-    // stmt.add_batch();
-    // println!("execute");
-    // stmt.execute();
+    let inserted = taos.exec_many([
+        // create super table
+        "CREATE TABLE `meters` (`ts` TIMESTAMP, `current` FLOAT, `voltage` INT, `phase` FLOAT) \
+         TAGS (`groupid` INT, `location` BINARY(16))",
+        // create child table
+        "CREATE TABLE `d0` USING `meters` TAGS(0, 'Los Angles')",
+        // insert into child table
+        "INSERT INTO `d0` values(now - 10s, 10, 116, 0.32)",
+        // insert with NULL values
+        "INSERT INTO `d0` values(now - 8s, NULL, NULL, NULL)",
+        // insert and automatically create table with tags if not exists
+        "INSERT INTO `d1` USING `meters` TAGS(1, 'San Francisco') values(now - 9s, 10.1, 119, 0.33)",
+        // insert many records in a single sql
+        "INSERT INTO `d1` values (now-8s, 10, 120, 0.33) (now - 6s, 10, 119, 0.34) (now - 4s, 11.2, 118, 0.322)",
+    ]).await?;
 
-    // assert_eq!(stmt.affected_rows(), 2);
-    // println!("done");
+    assert_eq!(inserted, 6);
+    let mut result = taos.query("select * from `meters`").await?;
+
+    for field in result.fields() {
+        println!("got field: {}", field.name());
+    }
+
+    // Query option 1, use rows stream.
+    let mut rows = result.rows();
+    while let Some(row) = rows.try_next().await? {
+        for (name, value) in row {
+            println!("got value of {}: {}", name, value);
+        }
+    }
+
+    // Query options 2, use deserialization with serde.
+    #[derive(Debug, serde::Deserialize)]
+    #[allow(dead_code)]
+    struct Record {
+        // deserialize timestamp to chrono::DateTime<Local>
+        ts: DateTime<Local>,
+        // float to f32
+        current: Option<f32>,
+        // int to i32
+        voltage: Option<i32>,
+        phase: Option<f32>,
+        groupid: i32,
+        // binary/varchar to String
+        location: String,
+    }
+
+    let records: Vec<Record> = taos
+        .query("select * from `meters`")
+        .await?
+        .deserialize()
+        .try_collect()
+        .await?;
+
+    dbg!(records);
+    Ok(())
+}
+
+// Query options 2, use deserialization with serde.
+#[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
+struct Record {
+    // deserialize timestamp to chrono::DateTime<Local>
+    ts: DateTime<Local>,
+    // float to f32
+    current: Option<f32>,
+    // int to i32
+    voltage: Option<i32>,
+    phase: Option<f32>,
+}
+
+async fn prepare(taos: Taos) -> anyhow::Result<()> {
+    let inserted = taos.exec_many([
+        // create child table
+        "CREATE TABLE IF NOT EXISTS `d0` USING `meters` TAGS(0, 'Los Angles')",
+        // insert into child table
+        "INSERT INTO `d0` values(now - 10s, 10, 116, 0.32)",
+        // insert with NULL values
+        "INSERT INTO `d0` values(now - 8s, NULL, NULL, NULL)",
+        // insert and automatically create table with tags if not exists
+        "INSERT INTO `d1` USING `meters` TAGS(1, 'San Francisco') values(now - 9s, 10.1, 119, 0.33)",
+        // insert many records in a single sql
+        "INSERT INTO `d1` values (now-8s, 10, 120, 0.33) (now - 6s, 10, 119, 0.34) (now - 4s, 11.2, 118, 0.322)",
+    ]).await?;
+    assert_eq!(inserted, 6);
+    Ok(())
+}
+
+/// tmq 监听测试
+#[tokio::test]
+async fn test_tmq() -> anyhow::Result<()> {
+    // std::env::set_var("RUST_LOG", "debug");
+    // pretty_env_logger::init();
+    // let dsn = "taos://192.168.0.201:36030";
+    // let builder = TaosBuilder::from_dsn(dsn)?;
+
+    // let taos = builder.build().await?;
+    // let db = "tmq";
+
+    // prepare database
+    // taos.exec_many([
+    //     format!("DROP TOPIC IF EXISTS tmq_meters"),
+    //     format!("DROP DATABASE IF EXISTS `{db}`"),
+    //     format!("CREATE DATABASE `{db}`"),
+    //     format!("USE `{db}`"),
+    //     // create super table
+    //     format!("CREATE TABLE `meters` (`ts` TIMESTAMP, `current` FLOAT, `voltage` INT, `phase` FLOAT)\
+    //              TAGS (`groupid` INT, `location` BINARY(16))"),
+    //     // create topic for subscription
+    //     format!("CREATE TOPIC tmq_meters with META AS DATABASE {db}")
+    // ])
+    // .await?;
+
+    // let task = tokio::spawn(prepare(taos));
+
+    // use std::time::Duration;
+    // tokio::time::sleep(Duration::from_secs(1)).await;
+
+    // subscribe
+    let tmq = TmqBuilder::from_dsn("tmq://192.168.0.201:36030/test?group.id=group5&timeout=never")?;
+
+    let mut consumer = tmq.build().await?;
+    consumer.subscribe(["test"]).await?;
+    
+    // let mut stream = consumer.stream_with_timeout(Timeout::from_secs(2));
+    let mut stream = consumer.stream();
+
+    while let Some((offset, message)) = stream.try_next().await? {
+        // get information from offset
+
+        // the topic
+        let topic = offset.topic();
+        // the vgroup id, like partition id in kafka.
+        let vgroup_id = offset.vgroup_id();
+        println!("* in vgroup id {vgroup_id} of topic {topic}\n");
+
+        if let Some(data) = message.into_data() {
+            while let Some(block) = data.fetch_raw_block().await? {
+                // one block for one table, get table name if needed
+                let name = block.table_name();
+                let records: Vec<Record> = block.deserialize().try_collect()?;
+                println!(
+                    "** table: {}, got {} records: {:#?}\n",
+                    name.unwrap(),
+                    records.len(),
+                    records
+                );
+            }
+        }
+        consumer.commit(offset).await?;
+    }
+
+    // consumer.unsubscribe().await;
+
+    // task.await??;
+
+    Ok(())
 }

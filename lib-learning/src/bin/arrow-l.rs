@@ -3,10 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anyhow::Result;
 
 use arrow::{
-    array::{
-        Float32Builder, StringBuilder,
-        TimestampMillisecondBuilder, 
-    },
+    array::{Float32Builder, StringBuilder, TimestampMillisecondBuilder},
     datatypes::{DataType, Field, Schema},
     ipc::writer::StreamWriter,
     record_batch::RecordBatch,
@@ -29,13 +26,13 @@ async fn main() -> Result<()> {
         Field::new("id", DataType::Utf8, false),
         Field::new("value", DataType::Float32, false),
     ];
-    let record_list = DataType::Timestamp(arrow::datatypes::TimeUnit::Millisecond, None);
+    // let record_list = DataType::Timestamp(arrow::datatypes::TimeUnit::Millisecond, None);
 
     let schema = Schema::new(flat_columns).with_metadata(metadata);
     let mut writer = StreamWriter::try_new(&stream, &schema)?;
-    let mut records = 0;
+    // let records = 0;
     let now = chrono::Utc::now();
-    let mut ms = now.timestamp_millis() - 10000;
+    let ms = now.timestamp_millis() - 10000;
 
     loop {
         let mut timestamp_builder = TimestampMillisecondBuilder::new();
@@ -49,11 +46,7 @@ async fn main() -> Result<()> {
         let value = value_builder.finish();
         let batch = RecordBatch::try_new(
             Arc::new(schema.clone()),
-            vec![
-                Arc::new(timestamp),
-                Arc::new(id),
-                Arc::new(value),
-            ],
+            vec![Arc::new(timestamp), Arc::new(id), Arc::new(value)],
         )?;
         dbg!(&batch);
         writer.write(&batch)?;
@@ -68,11 +61,7 @@ async fn main() -> Result<()> {
         let value = value_builder.finish();
         let batch = RecordBatch::try_new(
             Arc::new(schema.clone()),
-            vec![
-                Arc::new(timestamp),
-                Arc::new(id),
-                Arc::new(value),
-            ],
+            vec![Arc::new(timestamp), Arc::new(id), Arc::new(value)],
         )?;
         dbg!(&batch);
         writer.write(&batch)?;

@@ -41,11 +41,13 @@ fn main() {
 fn subscribe_to_variables(session: Arc<RwLock<Session>>, ns: u16) -> Result<(), StatusCode> {
     let session = session.read();
     let nodes_to_read = vec![ReadValueId {
-        node_id: NodeId { namespace: 10, identifier: Identifier::from_str("i=1004").unwrap() },
+        node_id: NodeId {
+            namespace: 10,
+            identifier: Identifier::from_str("i=1004").unwrap(),
+        },
         attribute_id: 1,
         index_range: UAString::null(),
         data_encoding: QualifiedName::null(),
-
     }];
     let timestamps_to_return = TimestampsToReturn::Source;
     let max_age = i32::MAX as f64;
